@@ -53,6 +53,7 @@ export default function App() {
   const [step, setStep] = useState<Step>(1);
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Analyzing context...");
@@ -145,24 +146,52 @@ export default function App() {
   };
 
   const downloadPDF = async () => {
-    if (!resultRef.current) return;
+    if (!resultRef.current || isDownloading) return;
     
-    // Temporarily adjust styles for PDF generation if needed
-    const canvas = await html2canvas(resultRef.current, {
-      scale: 2,
-      backgroundColor: isHighContrast ? '#000000' : '#0a0a0a',
-      useCORS: true,
-      logging: false,
-    });
-    
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('SHEild-Safety-Plan.pdf');
+    setIsDownloading(true);
+    try {
+      const element = resultRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: isHighContrast ? '#000000' : '#0a0a0a',
+        useCORS: true,
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth - 20; // 10mm margin on each side
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      
+      let heightLeft = imgHeight;
+      let position = 10; // 10mm top margin
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= (pdfHeight - 20);
+
+      // Add subsequent pages if content is too long
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= (pdfHeight - 20);
+      }
+      
+      pdf.save(`SHEild-Safety-Plan-${new Date().getTime()}.pdf`);
+    } catch (err) {
+      console.error("PDF Generation Error:", err);
+      setError("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const reset = () => {
@@ -332,10 +361,15 @@ export default function App() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={downloadPDF}
-                  className="flex items-center justify-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all"
+                  disabled={isDownloading}
+                  className="flex items-center justify-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all disabled:opacity-50"
                 >
-                  <Download className="w-5 h-5" />
-                  Download PDF
+                  {isDownloading ? (
+                    <RefreshCcw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  {isDownloading ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   onClick={reset}
