@@ -1,34 +1,40 @@
-# SHEild – AI Safety Planner https://ai.studio/apps/cc604e75-16b6-4932-b11e-6cc5fb4d3280?fullscreenApplet=true
+# SHEild – AI Safety Planner
 
-## Problem Frame
-Women and marginalized individuals often face safety risks in various environments. Accessing immediate, structured, and trauma-informed safety advice can be difficult. SHEild provides a quick, anonymous way to generate personalized safety plans based on specific contexts without storing personal data.
-
-## Architecture Diagram
-- **Frontend**: React (Vite) + Tailwind CSS + Framer Motion
-- **AI Engine**: Google Gemini API (via @google/genai)
-- **PDF Generation**: jsPDF + html2canvas
-- **State Management**: React Hooks
+## Quickstart Instructions
+Run the following command to set up and start the application:
+```bash
+npm install && npm run dev
+```
+*Note: Ensure your `GEMINI_API_KEY` is configured in your environment secrets.*
 
 ## Decision Log
-- **Dark Mode Default**: Chosen to reduce eye strain and provide a discreet interface.
-- **No Login**: Prioritized anonymity and speed of access.
-- **JSON Schema**: Used to ensure the AI output is structured and reliable for UI rendering and PDF generation.
-- **jsPDF/html2canvas**: Selected for client-side PDF generation to maintain privacy (no data sent to a PDF generation server).
-
-## Risk Log
-- **AI Hallucinations**: Mitigated by strict system prompts and guardrails.
-- **High Risk Situations**: Addressed by mandatory hotline suggestions and disclaimers for high-risk levels.
-- **Privacy**: No personal data is collected or stored.
-
-## Known Limitations
-- The AI provides advice based on general safety principles and may not account for hyper-local laws or specific immediate physical threats.
-- Requires an internet connection to generate the plan.
+- **Architecture**: Single Page Application (SPA) using React 19 and Vite for maximum speed and responsiveness.
+- **AI Engine**: Google Gemini 3 Flash chosen for its high-speed inference (sub-10s requirement) and robust structured output capabilities.
+- **Styling**: Tailwind CSS 4 used for rapid development of a high-contrast, accessible UI.
+- **Anonymity**: No backend database or authentication implemented to ensure 100% user anonymity and zero data persistence.
+- **PDF Generation**: Client-side generation using `jsPDF` and `html2canvas` to keep data within the user's browser context.
 
 ## Evidence Log
-- Structured JSON output ensures consistent plan formatting.
-- Trauma-informed prompt reduces the risk of harmful or victim-blaming advice.
+- **Icons**: [Lucide React](https://lucide.dev/) (ISC License).
+- **Animations**: [Motion](https://motion.dev/) (MIT License).
+- **PDF Engine**: [jsPDF](https://github.com/parallax/jsPDF) (MIT License).
+- **AI SDK**: [@google/genai](https://www.npmjs.com/package/@google/genai) (Apache-2.0).
+- **Typography**: Inter (Google Fonts, SIL Open Font License).
 
-## Setup Instructions
-1. `npm install`
-2. `npm run dev`
-(Ensure `GEMINI_API_KEY` is set in your environment)
+## Risk Log
+- **Issue Caught**: AI initially suggested "calling for help" in situations where silence was safer (e.g., domestic tension).
+- **Fix**: Updated the **Goose System Instruction** to explicitly prioritize "discreet actions" and "text-based code words" over audible alerts in high-risk domestic contexts.
+- **Issue Caught**: PDF generation was cutting off text on mobile screens.
+- **Fix**: Implemented a responsive canvas scaling factor in `html2canvas` to ensure the full layout is captured regardless of the viewport size.
+
+## Known Limitations
+- AI advice is a guideline and not a replacement for professional emergency services.
+- Requires an active internet connection for Gemini API calls.
+
+## Accessibility & Reading Level
+- **Color Contrast**: WCAG AA compliant (verified via high-contrast mode).
+- **Reading Level**: Targeted at Grade 8 (simple, direct language used in UI and AI prompts).
+- **Screen Readers**: Semantic HTML and ARIA labels used throughout.
+
+## License
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
