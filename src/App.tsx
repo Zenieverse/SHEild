@@ -18,7 +18,12 @@ import {
   Eye,
   Sun,
   Moon,
-  Info
+  Info,
+  X,
+  Copy,
+  Check,
+  ExternalLink,
+  LifeBuoy
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { cn } from './lib/utils';
@@ -48,6 +53,9 @@ export default function App() {
   const [step, setStep] = useState<Step>(1);
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Analyzing context...");
   const [formData, setFormData] = useState<FormData>({
     environment: '',
     riskType: '',
@@ -58,10 +66,39 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
+  const loadingMessages = [
+    "Analyzing context...",
+    "Consulting safety protocols...",
+    "Structuring your plan...",
+    "Finalizing de-escalation steps...",
+    "Almost ready..."
+  ];
+
+  useEffect(() => {
+    if (isLoading) {
+      let i = 0;
+      const interval = setInterval(() => {
+        i = (i + 1) % loadingMessages.length;
+        setLoadingMessage(loadingMessages[i]);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
+
   // Default to dark mode is handled by the root class
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
+
+  const quickExit = () => {
+    window.location.href = 'https://www.google.com';
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleNext = () => {
     if (step === 1 && formData.environment) setStep(2);
@@ -151,12 +188,21 @@ export default function App() {
       "font-sans selection:bg-emerald-500/30"
     )}>
       {/* Header */}
-      <header className="max-w-4xl mx-auto p-6 flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={reset}>
-          <Shield className="w-8 h-8 text-emerald-500" />
-          <h1 className="text-2xl font-bold tracking-tight">SHEild</h1>
+      <header className="max-w-4xl mx-auto p-4 sm:p-6 flex justify-between items-center sticky top-0 z-50 bg-inherit/80 backdrop-blur-md">
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={reset}>
+          <div className="p-2 bg-emerald-500/10 rounded-xl group-hover:bg-emerald-500/20 transition-colors">
+            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500" />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">SHEild</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button 
+            onClick={() => setShowAbout(true)}
+            className="p-2 rounded-full hover:bg-white/10 transition-colors"
+            title="About SHEild"
+          >
+            <Info className="w-5 h-5" />
+          </button>
           <button 
             onClick={() => setIsHighContrast(!isHighContrast)}
             className="p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -164,8 +210,30 @@ export default function App() {
           >
             {isHighContrast ? <Sun className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
+          <button 
+            onClick={quickExit}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2"
+            title="Quick Exit"
+          >
+            <X className="w-4 h-4" />
+            <span className="hidden sm:inline">Quick Exit</span>
+          </button>
         </div>
       </header>
+
+      {/* Progress Bar */}
+      {step !== 'result' && (
+        <div className="max-w-4xl mx-auto px-6 mb-8">
+          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-emerald-500"
+              initial={{ width: "0%" }}
+              animate={{ width: `${(Number(step) / 4) * 100}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+        </div>
+      )}
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <AnimatePresence mode="wait">
@@ -232,8 +300,17 @@ export default function App() {
                       <Users className="w-5 h-5 text-emerald-500" />
                       Trusted Contact Script
                     </h3>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 italic text-neutral-300">
-                      "{plan?.trusted_contact_script}"
+                    <div className="relative group">
+                      <div className="p-4 pr-12 rounded-xl bg-white/5 border border-white/10 italic text-neutral-300">
+                        "{plan?.trusted_contact_script}"
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(plan?.trusted_contact_script || '')}
+                        className="absolute top-3 right-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                        title="Copy to clipboard"
+                      >
+                        {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      </button>
                     </div>
                   </section>
                 </div>
@@ -351,10 +428,10 @@ export default function App() {
                     )}
                   >
                     {isLoading ? (
-                      <>
+                      <div className="flex flex-col items-center gap-2">
                         <RefreshCcw className="w-5 h-5 animate-spin" />
-                        Generating...
-                      </>
+                        <span className="text-xs animate-pulse">{loadingMessage}</span>
+                      </div>
                     ) : (
                       <>
                         Generate My Safety Plan
@@ -394,9 +471,90 @@ export default function App() {
       </main>
 
       <footer className="max-w-4xl mx-auto p-12 text-center text-neutral-500 text-sm">
+        <div className="flex justify-center gap-6 mb-8">
+          <button onClick={() => setShowAbout(true)} className="hover:text-neutral-300 transition-colors">About</button>
+          <a href="https://www.thehotline.org/" target="_blank" rel="noopener noreferrer" className="hover:text-neutral-300 transition-colors flex items-center gap-1">
+            Global Resources <ExternalLink className="w-3 h-3" />
+          </a>
+          <button onClick={quickExit} className="text-red-500 hover:text-red-400 font-bold">Quick Exit</button>
+        </div>
         <p>© {new Date().getFullYear()} SHEild. Trauma-informed safety planning.</p>
         <p className="mt-2 italic">Your data is never stored. Your safety is our priority.</p>
       </footer>
+
+      {/* About Modal */}
+      <AnimatePresence>
+        {showAbout && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowAbout(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={cn(
+                "max-w-2xl w-full p-8 rounded-3xl border shadow-2xl overflow-y-auto max-h-[90vh]",
+                isHighContrast ? "bg-black border-white" : "bg-neutral-900 border-white/10"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold flex items-center gap-2">
+                  <Shield className="w-6 h-6 text-emerald-500" />
+                  About SHEild
+                </h3>
+                <button onClick={() => setShowAbout(false)} className="p-2 hover:bg-white/10 rounded-full">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-6 text-neutral-300">
+                <p>
+                  SHEild is an AI-powered safety planning assistant designed for women and marginalized individuals. 
+                  Our goal is to provide immediate, structured, and trauma-informed safety advice for various situations.
+                </p>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-emerald-500" />
+                      Privacy
+                    </h4>
+                    <p className="text-sm">We do not store any personal data. Your inputs are used only to generate the plan and are cleared immediately.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                    <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                      <LifeBuoy className="w-4 h-4 text-emerald-500" />
+                      Support
+                    </h4>
+                    <p className="text-sm">SHEild is a tool, not a replacement for professional emergency services or law enforcement.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                  <h4 className="font-bold text-red-400 mb-2">Disclaimer</h4>
+                  <p className="text-sm">
+                    The advice provided is AI-generated and should be used as a guideline. 
+                    Always prioritize your intuition and immediate safety. 
+                    If you are in immediate danger, please contact your local emergency services (e.g., 911, 999, 112).
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => setShowAbout(false)}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all"
+                >
+                  Got it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
