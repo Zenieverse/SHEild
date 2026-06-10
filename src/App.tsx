@@ -166,23 +166,26 @@ export default function App() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      const margin = 10;
+      const contentWidth = pdfWidth - (2 * margin);
+      const contentHeight = pdfHeight - (2 * margin);
+      
       const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = pdfWidth - 20; // 10mm margin on each side
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
       
       let heightLeft = imgHeight;
-      let position = 10; // 10mm top margin
+      let position = margin;
 
       // Add first page
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      heightLeft -= (pdfHeight - 20);
+      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
+      heightLeft -= contentHeight;
 
       // Add subsequent pages if content is too long
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight + 10;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + margin;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - 20);
+        pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
+        heightLeft -= contentHeight;
       }
       
       pdf.save(`SHEild-Safety-Plan-${new Date().getTime()}.pdf`);
