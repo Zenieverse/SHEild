@@ -1,5 +1,7 @@
 # SHEild – AI Safety Planner
 
+https://sheild-ai-safety-planner-764082783379.us-west1.run.app
+
 ## Quickstart Instructions
 Run the following command to set up and start the application:
 ```bash
